@@ -2,3 +2,6 @@
 /docker/apache2/conf/ssl/*.csr
 /docker/apache2/conf/ssl/*.crt
 /docker/apache2/conf/ssl/*.key
+/app
+*.sql
+.env

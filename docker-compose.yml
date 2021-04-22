@@ -9,7 +9,7 @@ services:
       networks:
           - wpdocker
       volumes:
-          - ./:/usr/local/apache2/vhosts/wpdocker.com
+          - ./app:/usr/local/apache2/vhosts/wpdocker.com
           - ./docker/php/php.ini:/usr/local/etc/php/php.ini
 
   httpd:
@@ -22,7 +22,7 @@ services:
       ports:
           - "443:443"
       volumes:
-          - ./:/usr/local/apache2/vhosts/wpdocker.com
+          - ./app:/usr/local/apache2/vhosts/wpdocker.com
           - ./docker/apache2/conf/httpd.conf:/usr/local/apache2/conf/httpd.conf
           - ./docker/apache2/conf/extra/httpd-vhosts.conf:/usr/local/apache2/conf/extra/httpd-vhosts.conf
           - ./docker/apache2/conf/ssl/wpdocker.local.crt:/usr/local/apache2/conf/ssl/warthog.local.crt
@@ -38,12 +38,15 @@ services:
           - "3306:3306"
       volumes:
           - ./docker/mysql/backup.sql:/home/backup.sql
+          - mysql-data-volume:/var/lib/mysql
       environment:
           - MYSQL_DATABASE=${DB_NAME}
           - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
           - MYSQL_USER=${DB_USER}
           - MYSQL_PASSWORD=${DB_PASSWORD}
 
+volumes:
+    mysql-data-volume:
 networks:
   wpdocker:
     driver: bridge
