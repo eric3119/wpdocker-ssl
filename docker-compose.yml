@@ -1,52 +1,74 @@
 version: "3.8"
 
 services:
-  php_fpm:
-      build: .
-      container_name: wp_php_fpm
-      restart: always
-      working_dir: /usr/local/apache2/vhosts/wpdocker.com
-      networks:
-          - wpdocker
-      volumes:
-          - ./app:/usr/local/apache2/vhosts/wpdocker.com
-          - ./docker/php/php.ini:/usr/local/etc/php/php.ini
+    php_fpm:
+        build: .
+        container_name: wp_php_fpm
+        restart: always
+        working_dir: /usr/local/apache2/vhosts/wpdocker.com
+        networks:
+            - wpdocker
+        volumes:
+            - ./app:/usr/local/apache2/vhosts/wpdocker.com
+            - ./docker/php/php.ini:/usr/local/etc/php/php.ini
 
-  httpd:
-      image: httpd:2.4
-      container_name: wp_httpd
-      restart: always
-      working_dir: /usr/local/apache2/vhosts/wpdocker.com
-      networks:
-          - wpdocker
-      ports:
-          - "443:443"
-      volumes:
-          - ./app:/usr/local/apache2/vhosts/wpdocker.com
-          - ./docker/apache2/conf/httpd.conf:/usr/local/apache2/conf/httpd.conf
-          - ./docker/apache2/conf/extra/httpd-vhosts.conf:/usr/local/apache2/conf/extra/httpd-vhosts.conf
-          - ./docker/apache2/conf/ssl/wpdocker.local.crt:/usr/local/apache2/conf/ssl/warthog.local.crt
-          - ./docker/apache2/conf/ssl/wpdocker.local.key:/usr/local/apache2/conf/ssl/warthog.local.key
+    httpd:
+        image: httpd:2.4
+        container_name: wp_httpd
+        restart: always
+        working_dir: /usr/local/apache2/vhosts/wpdocker.com
+        networks:
+            - wpdocker
+        ports:
+            - "443:443"
+        volumes:
+            - ./app:/usr/local/apache2/vhosts/wpdocker.com
+            - ./docker/apache2/conf/httpd.conf:/usr/local/apache2/conf/httpd.conf
+            - ./docker/apache2/conf/extra/httpd-vhosts.conf:/usr/local/apache2/conf/extra/httpd-vhosts.conf
+            - ./docker/apache2/conf/ssl/wpdocker.local.crt:/usr/local/apache2/conf/ssl/warthog.local.crt
+            - ./docker/apache2/conf/ssl/wpdocker.local.key:/usr/local/apache2/conf/ssl/warthog.local.key
+            - wpdocker_logs:/usr/local/apache2/logs
 
-  mysql:
-      image: mysql:5.7
-      container_name: wp_mysql
-      restart: always
-      networks:
-          - wpdocker
-      ports:
-          - "3306:3306"
-      volumes:
-          - ./docker/mysql/backup.sql:/home/backup.sql
-          - mysql-data-volume:/var/lib/mysql
-      environment:
-          - MYSQL_DATABASE=${DB_NAME}
-          - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
-          - MYSQL_USER=${DB_USER}
-          - MYSQL_PASSWORD=${DB_PASSWORD}
+    mysql:
+        image: mysql:5.7
+        container_name: wp_mysql
+        restart: always
+        networks:
+            - wpdocker
+        ports:
+            - "3306:3306"
+        volumes:
+            - ./docker/mysql/backup.sql:/home/backup.sql
+            - mysql-data-volume:/var/lib/mysql
+        environment:
+            - MYSQL_DATABASE=${DB_NAME}
+            - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
+            - MYSQL_USER=${DB_USER}
+            - MYSQL_PASSWORD=${DB_PASSWORD}
+
+    goaccess:
+        depends_on:
+            - httpd
+        restart: always
+        #command: goaccess /srv/logs/goaccess.log --config-file=/srv/data/goaccess.conf --output=/srv/report/index.html --log-file=/srv/logs/goaccess.log --real-time-html
+        image: allinurl/goaccess
+        restart: unless-stopped
+        container_name: goaccess_server
+#        command: -a -o html #--log-format COMBINED --real-time-html
+        ports:
+            - "7890:7890"
+        volumes:
+            - logs:/srv/logs
+            - wpdocker_logs:/srv/logs/wpdocker:ro
+            - ./docker/goaccess/html:/srv/report:rw
+            - ./docker/goaccess/data:/srv/data:ro
+            - ./docker/goaccess/goaccess.conf:/etc/goaccess/goaccess.conf
 
 volumes:
     mysql-data-volume:
+    wpdocker_logs:
+    logs:
+    report:
 networks:
   wpdocker:
     driver: bridge
